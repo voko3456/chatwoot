@@ -242,6 +242,8 @@ Rails.application.routes.draw do
   mount Facebook::Messenger::Server, at: 'bot'
   get 'webhooks/twitter', to: 'api/v1/webhooks#twitter_crc'
   post 'webhooks/twitter', to: 'api/v1/webhooks#twitter_events'
+  get 'webhooks/instagram', to: 'api/v1/webhooks#instagram_verify'
+  post 'webhooks/instagram', to: 'api/v1/webhooks#instagram_events'
 
   namespace :twitter do
     resource :callback, only: [:show]
