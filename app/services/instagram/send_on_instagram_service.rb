@@ -13,14 +13,15 @@ class Instagram::SendOnInstagramService < Base::SendOnChannelService
   end
 
   def perform_reply
-    if message.attachments.present?
-      send_to_facebook_page merge_attachement_params
+    if message.attachments.any?
+      send_to_facebook_page message_params if message.content.present?
+      send_to_facebook_page merge_attachment_params
     else
       send_to_facebook_page message_params
     end
-  rescue Facebook::Messenger::FacebookError => e
-    Rails.logger.info e
-    channel.authorization_error!
+  rescue StandardError => e
+    Sentry.capture_exception(e)
+    true
   end
 
   def message_params
@@ -32,12 +33,14 @@ class Instagram::SendOnInstagramService < Base::SendOnChannelService
     }
   end
 
-  def merge_attachement_params
+  def merge_attachment_params
     attachment = message.attachments.first
-    message_params[:message][:attachment] = {
-      type: 'image',
-      payload: {
-        url: attachment.file_url
+    message_params[:message]= {
+      attachment: {
+        type: 'image',
+        payload: {
+          url: attachment.file_url
+        }
       }
     }
     message_params
@@ -53,6 +56,7 @@ class Instagram::SendOnInstagramService < Base::SendOnChannelService
     url = "https://graph.facebook.com/v11.0/me/messages?access_token=#{access_token}"
 
     response = HTTParty.post(url, options)
+    Rails.logger.info("Instagram Error: #{response} : #{message_content}")
     response.body
   end
 
